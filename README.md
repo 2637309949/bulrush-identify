@@ -16,7 +16,7 @@ app.Use(&identify.Identify{
         }
         return nil, errors.New("user authentication failed")
     },
-    Tokens: plugins.TokensGroup{
+    Tokens: identify.TokensGroup{
         Save:   utils.Rds.Hooks.SaveToken,
         Revoke: utils.Rds.Hooks.RevokeToken,
         Find:   utils.Rds.Hooks.FindToken,
