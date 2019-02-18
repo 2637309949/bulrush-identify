@@ -17,9 +17,9 @@ app.Use(&identify.Identify{
         return nil, errors.New("user authentication failed")
     },
     Tokens: identify.TokensGroup{
-        Save:   utils.Rds.Hooks.SaveToken,
-        Revoke: utils.Rds.Hooks.RevokeToken,
-        Find:   utils.Rds.Hooks.FindToken,
+        Save:   Rds.Hooks.SaveToken,
+        Revoke: Rds.Hooks.RevokeToken,
+        Find:   Rds.Hooks.FindToken,
     },
     FakeURLs: []interface{}{`^/api/v1/ignore$`, `^/api/v1/docs/*`, `^/public/*`, `^/api/v1/ptest$`},
 })

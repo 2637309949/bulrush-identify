@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/2637309949/bulrush"
-	"github.com/2637309949/bulrush/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/now"
 )
@@ -47,9 +46,9 @@ type Identify struct {
 func (iden *Identify) obtainToken(authData interface{}) interface{} {
 	if authData != nil {
 		data := map[string]interface{}{
-			"accessToken":  utils.RandString(32),
-			"refreshToken": utils.RandString(32),
-			"expiresIn":    utils.Some(iden.ExpiresIn, 86400),
+			"accessToken":  bulrush.RandString(32),
+			"refreshToken": bulrush.RandString(32),
+			"expiresIn":    bulrush.Some(iden.ExpiresIn, 86400),
 			"created":      now.New(time.Now()).Unix(),
 			"updated":      now.New(time.Now()).Unix(),
 			"extra":        authData,
@@ -73,7 +72,7 @@ func (iden *Identify) refleshToken(refreshToken string) interface{} {
 		iden.Tokens.Revoke(accessToken.(string))
 		originToken["created"] = now.New(time.Now()).Unix()
 		originToken["updated"] = now.New(time.Now()).Unix()
-		originToken["accessToken"] = utils.RandString(32)
+		originToken["accessToken"] = bulrush.RandString(32)
 		iden.Tokens.Save(originToken)
 		return originToken
 	}
@@ -98,9 +97,9 @@ func (iden *Identify) verifyToken(token string) bool {
 // Plugin -
 func (iden *Identify) Plugin() bulrush.PNRet {
 	return func(router *gin.RouterGroup) {
-		obtainTokenRoute := utils.Some(iden.Routes.ObtainTokenRoute, "/obtainToken").(string)
-		revokeTokenRoute := utils.Some(iden.Routes.RevokeTokenRoute, "/revokeToken").(string)
-		refleshTokenRoute := utils.Some(iden.Routes.RefleshTokenRoute, "/refleshToken").(string)
+		obtainTokenRoute := bulrush.Some(iden.Routes.ObtainTokenRoute, "/obtainToken").(string)
+		revokeTokenRoute := bulrush.Some(iden.Routes.RevokeTokenRoute, "/revokeToken").(string)
+		refleshTokenRoute := bulrush.Some(iden.Routes.RefleshTokenRoute, "/refleshToken").(string)
 		FakeURLs := iden.FakeURLs
 		router.Use(func(c *gin.Context) {
 			var accessToken string
@@ -163,7 +162,7 @@ func (iden *Identify) Plugin() bulrush.PNRet {
 		})
 		router.Use(func(c *gin.Context) {
 			reqPath := c.Request.URL.Path
-			fakeURL := utils.Find(FakeURLs, func(regex interface{}) bool {
+			fakeURL := bulrush.Find(FakeURLs, func(regex interface{}) bool {
 				r, _ := regexp.Compile(regex.(string))
 				return r.MatchString(reqPath)
 			})
