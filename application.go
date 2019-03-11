@@ -35,11 +35,12 @@ type TokensGroup struct {
 // Identify authentication interface
 type Identify struct {
 	bulrush.PNBase
-	Auth      func(c *gin.Context) (interface{}, error)
-	ExpiresIn int
-	Routes    RoutesGroup
-	Tokens    TokensGroup
-	FakeURLs  []interface{}
+	Auth       func(c *gin.Context) (interface{}, error)
+	ExpiresIn  int
+	Routes     RoutesGroup
+	Tokens     TokensGroup
+	FakeURLs   []interface{}
+	FakeTokens []interface{}
 }
 
 // obtainToken token
@@ -101,6 +102,7 @@ func (iden *Identify) Plugin() bulrush.PNRet {
 		revokeTokenRoute := bulrush.Some(iden.Routes.RevokeTokenRoute, "/revokeToken").(string)
 		refleshTokenRoute := bulrush.Some(iden.Routes.RefleshTokenRoute, "/refleshToken").(string)
 		FakeURLs := iden.FakeURLs
+		FakeTokens := iden.FakeTokens
 		router.Use(func(c *gin.Context) {
 			var accessToken string
 			queryToken := c.Query("accessToken")
@@ -162,14 +164,20 @@ func (iden *Identify) Plugin() bulrush.PNRet {
 		})
 		router.Use(func(c *gin.Context) {
 			reqPath := c.Request.URL.Path
+			accessToken, _ := c.Get("accessToken")
+
 			fakeURL := bulrush.Find(FakeURLs, func(regex interface{}) bool {
 				r, _ := regexp.Compile(regex.(string))
 				return r.MatchString(reqPath)
 			})
+			fakeToken := bulrush.Find(FakeTokens, func(token interface{}) bool {
+				return accessToken == token.(string)
+			})
 			if fakeURL != nil {
 				c.Next()
+			} else if fakeToken != nil {
+				c.Next()
 			} else {
-				accessToken, _ := c.Get("accessToken")
 				ret := iden.verifyToken(accessToken.(string))
 				if ret {
 					rawToken := iden.Tokens.Find(accessToken.(string), "")
