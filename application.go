@@ -9,8 +9,6 @@
 package identify
 
 import (
-	"net/http"
-	"regexp"
 	"time"
 
 	"github.com/2637309949/bulrush"
@@ -26,10 +24,10 @@ type RoutesGroup struct {
 }
 
 // TokensGroup token store
-type TokensGroup struct {
-	Save   func(map[string]interface{})
-	Find   func(accessToken string, refreshToken string) map[string]interface{}
-	Revoke func(accessToken string) bool
+type TokensGroup interface {
+	Save(map[string]interface{})
+	Find(string, string) map[string]interface{}
+	Revoke(string) bool
 }
 
 // Identify authentication interface
@@ -43,13 +41,13 @@ type Identify struct {
 	FakeTokens []interface{}
 }
 
-// obtainToken token
-func (iden *Identify) obtainToken(authData interface{}) interface{} {
+// ObtainToken accessToken
+func (iden *Identify) ObtainToken(authData interface{}) interface{} {
 	if authData != nil {
 		data := map[string]interface{}{
-			"accessToken":  bulrush.RandString(32),
-			"refreshToken": bulrush.RandString(32),
-			"expiresIn":    bulrush.Some(iden.ExpiresIn, 86400),
+			"accessToken":  RandString(32),
+			"refreshToken": RandString(32),
+			"expiresIn":    Some(iden.ExpiresIn, 86400),
 			"created":      now.New(time.Now()).Unix(),
 			"updated":      now.New(time.Now()).Unix(),
 			"extra":        authData,
@@ -60,28 +58,28 @@ func (iden *Identify) obtainToken(authData interface{}) interface{} {
 	return nil
 }
 
-// revokeToken token
-func (iden *Identify) revokeToken(token string) bool {
+// RevokeToken accessToken
+func (iden *Identify) RevokeToken(token string) bool {
 	return iden.Tokens.Revoke(token)
 }
 
-// refleshToken token
-func (iden *Identify) refleshToken(refreshToken string) interface{} {
+// RefleshToken accessToken
+func (iden *Identify) RefleshToken(refreshToken string) interface{} {
 	originToken := iden.Tokens.Find("", refreshToken)
 	if originToken != nil {
 		accessToken, _ := originToken["accessToken"]
 		iden.Tokens.Revoke(accessToken.(string))
 		originToken["created"] = now.New(time.Now()).Unix()
 		originToken["updated"] = now.New(time.Now()).Unix()
-		originToken["accessToken"] = bulrush.RandString(32)
+		originToken["accessToken"] = RandString(32)
 		iden.Tokens.Save(originToken)
 		return originToken
 	}
 	return nil
 }
 
-// verifyToken token
-func (iden *Identify) verifyToken(token string) bool {
+// VerifyToken accessToken
+func (iden *Identify) VerifyToken(token string) bool {
 	verifyToken := iden.Tokens.Find(token, "")
 	now := time.Now().Unix()
 	if verifyToken == nil {
@@ -95,101 +93,16 @@ func (iden *Identify) verifyToken(token string) bool {
 	return true
 }
 
-// Plugin -
+// Plugin for bulrush
 func (iden *Identify) Plugin() bulrush.PNRet {
 	return func(router *gin.RouterGroup) {
-		obtainTokenRoute := bulrush.Some(iden.Routes.ObtainTokenRoute, "/obtainToken").(string)
-		revokeTokenRoute := bulrush.Some(iden.Routes.RevokeTokenRoute, "/revokeToken").(string)
-		refleshTokenRoute := bulrush.Some(iden.Routes.RefleshTokenRoute, "/refleshToken").(string)
-		FakeURLs := iden.FakeURLs
-		FakeTokens := iden.FakeTokens
-		router.Use(func(c *gin.Context) {
-			var accessToken string
-			queryToken := c.Query("accessToken")
-			formToken := c.PostForm("accessToken")
-			headerToken := c.Request.Header.Get("Authorization")
-			if queryToken != "" {
-				accessToken = queryToken
-			} else if formToken != "" {
-				accessToken = formToken
-			} else if headerToken != "" {
-				accessToken = headerToken
-			}
-			c.Set("accessToken", accessToken)
-			c.Next()
-		})
-		router.POST(obtainTokenRoute, func(c *gin.Context) {
-			authData, err := iden.Auth(c)
-			if authData != nil {
-				data := iden.obtainToken(authData)
-				c.JSON(http.StatusOK, data)
-				c.Abort()
-			} else {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"message": err.Error(),
-				})
-				c.Abort()
-			}
-		})
-		router.POST(revokeTokenRoute, func(c *gin.Context) {
-			accessToken, _ := c.Get("accessToken")
-			if accessToken.(string) != "" {
-				result := iden.revokeToken(accessToken.(string))
-				if result {
-					c.JSON(http.StatusOK, gin.H{
-						"success": true,
-					})
-				} else {
-					c.JSON(http.StatusBadRequest, gin.H{
-						"message": "revoke token failed, token may not exist",
-					})
-				}
-			}
-			c.Abort()
-		})
-		router.POST(refleshTokenRoute, func(c *gin.Context) {
-			refreshToken, _ := c.Get("accessToken")
-			if refreshToken.(string) != "" {
-				originToken := iden.refleshToken(refreshToken.(string))
-				// reflesh and save
-				if originToken != nil {
-					c.JSON(http.StatusOK, originToken)
-				} else {
-					c.JSON(http.StatusBadRequest, gin.H{
-						"message": "reflesh token failed, token may not exist",
-					})
-				}
-			}
-			c.Abort()
-		})
-		router.Use(func(c *gin.Context) {
-			reqPath := c.Request.URL.Path
-			accessToken, _ := c.Get("accessToken")
-
-			fakeURL := bulrush.Find(FakeURLs, func(regex interface{}) bool {
-				r, _ := regexp.Compile(regex.(string))
-				return r.MatchString(reqPath)
-			})
-			fakeToken := bulrush.Find(FakeTokens, func(token interface{}) bool {
-				return accessToken == token.(string)
-			})
-			if fakeURL != nil {
-				c.Next()
-			} else if fakeToken != nil {
-				c.Next()
-			} else {
-				ret := iden.verifyToken(accessToken.(string))
-				if ret {
-					rawToken := iden.Tokens.Find(accessToken.(string), "")
-					c.Set("accessData", rawToken["extra"])
-					c.Next()
-				} else {
-					c.JSON(http.StatusBadRequest, gin.H{
-						"message": "invalid token",
-					})
-					c.Abort()
-				}
-			}
-		})
+		obtainTokenRoute := Some(iden.Routes.ObtainTokenRoute, "/obtainToken").(string)
+		revokeTokenRoute := Some(iden.Routes.RevokeTokenRoute, "/revokeToken").(string)
+		refleshTokenRoute := Some(iden.Routes.RefleshTokenRoute, "/refleshToken").(string)
+		router.Use(accessToken(iden))
+		router.POST(obtainTokenRoute, obtainToken(iden))
+		router.POST(revokeTokenRoute, revokeToken(iden))
+		router.POST(refleshTokenRoute, refleshToken(iden))
+		router.Use(verifyToken(iden))
 	}
 }
