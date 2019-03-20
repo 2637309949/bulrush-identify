@@ -9,7 +9,6 @@
 package identify
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/2637309949/bulrush-addition/redis"
@@ -23,25 +22,19 @@ type RedisTokensGroup struct {
 
 // Save save a token
 func (group *RedisTokensGroup) Save(token map[string]interface{}) {
-	accessToken, _ := token["accessToken"]
-	refreshToken, _ := token["refreshToken"]
-	value, _ := json.Marshal(token)
-	group.Redis.Client.Set("TOKEN:"+accessToken.(string), value, 2*24*time.Hour)
-	group.Redis.Client.Set("TOKEN:"+refreshToken.(string), value, 5*24*time.Hour)
+	accessToken, _ := token["accessToken"].(string)
+	refreshToken, _ := token["refreshToken"].(string)
+	group.Redis.Hooks.SetJSON("TOKEN:"+accessToken, token, 36*time.Hour)
+	group.Redis.Hooks.SetJSON("TOKEN:"+refreshToken, token, 36*time.Hour)
 }
 
 // Revoke revoke a token
 func (group *RedisTokensGroup) Revoke(accessToken string) bool {
-	var imapGet map[string]interface{}
-	if value, err := group.Redis.Client.Get("TOKEN:" + accessToken).Result(); err == nil {
-		json.Unmarshal([]byte(value), &imapGet)
-	}
-
+	imapGet := group.Redis.Hooks.GetJSON("TOKEN:" + accessToken)
+	refreshToken, _ := imapGet["refreshToken"].(string)
 	if status, err := group.Redis.Client.Del("TOKEN:" + accessToken).Result(); err != nil || status != 1 {
 		return false
 	}
-
-	refreshToken, _ := imapGet["refreshToken"].(string)
 	if status, err := group.Redis.Client.Del("TOKEN:" + refreshToken).Result(); err != nil || status != 1 {
 		return false
 	}
@@ -50,22 +43,17 @@ func (group *RedisTokensGroup) Revoke(accessToken string) bool {
 
 // Find find a token
 func (group *RedisTokensGroup) Find(accessToken string, refreshToken string) map[string]interface{} {
-	var imapGet map[string]interface{}
 	if accessToken != "" {
-		if value, err := group.Redis.Client.Get("TOKEN:" + accessToken).Result(); err == nil {
-			json.Unmarshal([]byte(value), &imapGet)
-			accessTokenRaw, _ := imapGet["accessToken"].(string)
-			if accessTokenRaw == accessToken {
-				return imapGet
-			}
+		imapGet := group.Redis.Hooks.GetJSON("TOKEN:" + accessToken)
+		accessTokenRaw, _ := imapGet["accessToken"].(string)
+		if accessTokenRaw == accessToken {
+			return imapGet
 		}
 	} else if refreshToken != "" {
-		if value, err := group.Redis.Client.Get("TOKEN:" + refreshToken).Result(); err == nil {
-			json.Unmarshal([]byte(value), &imapGet)
-			refreshTokenRaw, _ := imapGet["refreshToken"].(string)
-			if refreshTokenRaw == refreshToken {
-				return imapGet
-			}
+		imapGet := group.Redis.Hooks.GetJSON("TOKEN:" + refreshToken)
+		refreshTokenRaw, _ := imapGet["refreshToken"].(string)
+		if refreshTokenRaw == refreshToken {
+			return imapGet
 		}
 	}
 	return nil

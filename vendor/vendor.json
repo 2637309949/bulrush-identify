@@ -3,10 +3,16 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "WHb4FfAA0npl601QaqcKIuG9Lb8=",
+			"checksumSHA1": "LIJVSZfFXak6eKSbA4qh4hNpXLA=",
 			"path": "github.com/2637309949/bulrush",
-			"revision": "585be95ad85cfd563bcfbfaf60d20ec566a8c988",
-			"revisionTime": "2019-02-13T15:25:10Z"
+			"revision": "4125872000fa7cae0517e083a8820cbdd98f9ec6",
+			"revisionTime": "2019-03-19T10:22:16Z"
+		},
+		{
+			"checksumSHA1": "7BP9Frnvb8Zfi2DIWpTFq2bXMOw=",
+			"path": "github.com/2637309949/bulrush-addition/redis",
+			"revision": "f5b315d0e682cd7d481bc9cbbe83655af2df4989",
+			"revisionTime": "2019-03-19T10:14:46Z"
 		},
 		{
 			"checksumSHA1": "2e3RoPjp0Eo2zPJ7g+1yYPtsXBw=",

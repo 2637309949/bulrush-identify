@@ -39,7 +39,7 @@ func setAccessData(ctx *gin.Context, data interface{}) {
 
 // RandString gen random string
 func RandString(n int) string {
-	const seeds = "abcdefghijklmnopqrstuvwxyz1234567890"
+	const seeds = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 	bytes := make([]byte, n)
 	for i := range bytes {
 		bytes[i] = seeds[rand.Intn(len(seeds))]
@@ -55,7 +55,7 @@ func Some(target interface{}, initValue interface{}) interface{} {
 	return initValue
 }
 
-// Find -
+// Find target from array
 func Find(arrs []interface{}, matcher func(interface{}) bool) interface{} {
 	var target interface{}
 	for _, item := range arrs {
