@@ -3,9 +3,10 @@ Provide basic user authorization and authentication.
 - EXAMPLE:   
 ```go
 app.Use(&identify.Identify{
-    Auth: func(c *gin.Context) (interface{}, error) {
+    Auth: func(ctx *gin.Context) (interface{}, error) {
         var login binds.Login
-        if err := c.ShouldBindJSON(&login); err != nil {
+        // captcha := ctx.GetString("captcha")
+        if err := ctx.ShouldBind(&login); err != nil {
             return nil, err
         }
         if login.Password == "xx" && login.UserName == "xx" {
@@ -16,10 +17,11 @@ app.Use(&identify.Identify{
         }
         return nil, errors.New("user authentication failed")
     },
-	Tokens: &identify.RedisTokensGroup{
-		Redis: Redis,
-	},
-    FakeURLs: []interface{}{`^/api/v1/ignore$`, `^/api/v1/docs/*`, `^/public/*`, `^/api/v1/ptest$`},
+    Model: &identify.RedisModel{
+        Redis: addition.Redis,
+    },
+    FakeTokens: []interface{}{"DEBUG"},
+    FakeURLs:   []interface{}{`^/api/v1/ignore$`, `^/api/v1/docs/*`, `^/public/*`, `^/api/v1/ptest$`},
 })
 ```
 ## MIT License
