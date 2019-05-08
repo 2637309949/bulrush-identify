@@ -23,8 +23,8 @@ type RoutesGroup struct {
 	RefleshTokenRoute string
 }
 
-// TokensGroup token store
-type TokensGroup interface {
+// Model token store
+type Model interface {
 	Save(map[string]interface{})
 	Find(string, string) map[string]interface{}
 	Revoke(string) bool
@@ -36,7 +36,7 @@ type Identify struct {
 	Auth       func(c *gin.Context) (interface{}, error)
 	ExpiresIn  int
 	Routes     RoutesGroup
-	Tokens     TokensGroup
+	Model      Model
 	FakeURLs   []interface{}
 	FakeTokens []interface{}
 }
@@ -52,7 +52,7 @@ func (iden *Identify) ObtainToken(authData interface{}) interface{} {
 			"updated":      now.New(time.Now()).Unix(),
 			"extra":        authData,
 		}
-		iden.Tokens.Save(data)
+		iden.Model.Save(data)
 		return data
 	}
 	return nil
@@ -60,19 +60,19 @@ func (iden *Identify) ObtainToken(authData interface{}) interface{} {
 
 // RevokeToken accessToken
 func (iden *Identify) RevokeToken(token string) bool {
-	return iden.Tokens.Revoke(token)
+	return iden.Model.Revoke(token)
 }
 
 // RefleshToken accessToken
 func (iden *Identify) RefleshToken(refreshToken string) interface{} {
-	originToken := iden.Tokens.Find("", refreshToken)
+	originToken := iden.Model.Find("", refreshToken)
 	if originToken != nil {
 		accessToken, _ := originToken["accessToken"]
-		iden.Tokens.Revoke(accessToken.(string))
+		iden.Model.Revoke(accessToken.(string))
 		originToken["created"] = now.New(time.Now()).Unix()
 		originToken["updated"] = now.New(time.Now()).Unix()
 		originToken["accessToken"] = RandString(32)
-		iden.Tokens.Save(originToken)
+		iden.Model.Save(originToken)
 		return originToken
 	}
 	return nil
@@ -80,7 +80,7 @@ func (iden *Identify) RefleshToken(refreshToken string) interface{} {
 
 // VerifyToken accessToken
 func (iden *Identify) VerifyToken(token string) bool {
-	verifyToken := iden.Tokens.Find(token, "")
+	verifyToken := iden.Model.Find(token, "")
 	now := time.Now().Unix()
 	if verifyToken == nil {
 		return false

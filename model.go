@@ -14,14 +14,14 @@ import (
 	"github.com/2637309949/bulrush-addition/redis"
 )
 
-// RedisTokensGroup adapter for redis
-type RedisTokensGroup struct {
-	TokensGroup
+// RedisModel adapter for redis
+type RedisModel struct {
+	Model
 	Redis *redis.Redis
 }
 
 // Save save a token
-func (group *RedisTokensGroup) Save(token map[string]interface{}) {
+func (group *RedisModel) Save(token map[string]interface{}) {
 	accessToken, _ := token["accessToken"].(string)
 	refreshToken, _ := token["refreshToken"].(string)
 	group.Redis.Hooks.SetJSON("TOKEN:"+accessToken, token, 36*time.Hour)
@@ -29,7 +29,7 @@ func (group *RedisTokensGroup) Save(token map[string]interface{}) {
 }
 
 // Revoke revoke a token
-func (group *RedisTokensGroup) Revoke(accessToken string) bool {
+func (group *RedisModel) Revoke(accessToken string) bool {
 	imapGet := group.Redis.Hooks.GetJSON("TOKEN:" + accessToken)
 	refreshToken, _ := imapGet["refreshToken"].(string)
 	if status, err := group.Redis.Client.Del("TOKEN:" + accessToken).Result(); err != nil || status != 1 {
@@ -42,7 +42,7 @@ func (group *RedisTokensGroup) Revoke(accessToken string) bool {
 }
 
 // Find find a token
-func (group *RedisTokensGroup) Find(accessToken string, refreshToken string) map[string]interface{} {
+func (group *RedisModel) Find(accessToken string, refreshToken string) map[string]interface{} {
 	if accessToken != "" {
 		imapGet := group.Redis.Hooks.GetJSON("TOKEN:" + accessToken)
 		accessTokenRaw, _ := imapGet["accessToken"].(string)

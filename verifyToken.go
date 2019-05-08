@@ -35,7 +35,7 @@ func verifyToken(iden *Identify) func(*gin.Context) {
 		} else {
 			ret := iden.VerifyToken(accessToken)
 			if ret {
-				rawToken := iden.Tokens.Find(accessToken, "")
+				rawToken := iden.Model.Find(accessToken, "")
 				setAccessData(c, rawToken["extra"])
 				c.Next()
 			} else {
