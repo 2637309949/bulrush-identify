@@ -30,7 +30,7 @@ func (group *RedisModel) Save(token map[string]interface{}) {
 
 // Revoke revoke a token
 func (group *RedisModel) Revoke(accessToken string) bool {
-	imapGet := group.Redis.Hooks.GetJSON("TOKEN:" + accessToken)
+	imapGet, _ := group.Redis.Hooks.GetJSON("TOKEN:" + accessToken)
 	refreshToken, _ := imapGet["refreshToken"].(string)
 	if status, err := group.Redis.Client.Del("TOKEN:" + accessToken).Result(); err != nil || status != 1 {
 		return false
@@ -44,13 +44,13 @@ func (group *RedisModel) Revoke(accessToken string) bool {
 // Find find a token
 func (group *RedisModel) Find(accessToken string, refreshToken string) map[string]interface{} {
 	if accessToken != "" {
-		imapGet := group.Redis.Hooks.GetJSON("TOKEN:" + accessToken)
+		imapGet, _ := group.Redis.Hooks.GetJSON("TOKEN:" + accessToken)
 		accessTokenRaw, _ := imapGet["accessToken"].(string)
 		if accessTokenRaw == accessToken {
 			return imapGet
 		}
 	} else if refreshToken != "" {
-		imapGet := group.Redis.Hooks.GetJSON("TOKEN:" + refreshToken)
+		imapGet, _ := group.Redis.Hooks.GetJSON("TOKEN:" + refreshToken)
 		refreshTokenRaw, _ := imapGet["refreshToken"].(string)
 		if refreshTokenRaw == refreshToken {
 			return imapGet
