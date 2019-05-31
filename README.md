@@ -1,6 +1,5 @@
 # bulrush-identify
 Provide basic user authorization and authentication.
-- EXAMPLE:   
 ```go
 app.Use(&identify.Identify{
     Auth: func(ctx *gin.Context) (interface{}, error) {
@@ -24,6 +23,35 @@ app.Use(&identify.Identify{
     FakeURLs:   []interface{}{`^/api/v1/ignore$`, `^/api/v1/docs/*`, `^/public/*`, `^/api/v1/ptest$`},
 })
 ```
+
+
+#### ObtainToken
+```curl
+double@double:~/bulrush-template$ curl http://127.0.0.1:3001/api/v1/obtainToken -X POST -d "username=123&password=xxx"
+{
+  "accessToken":"E8V3TZX3XQEWN6E8B0VJTXK26Z8OF6F5",
+  "refreshToken":"U1MPQIYQZKD86CYGWKDI04O4R5SK4FEW",
+  "created":1559287003,
+  "updated":1559287003,
+  "expired":1559373403
+}
+```
+
+#### RefleshToken
+```curl
+double@double:~/bulrush-template$ curl http://127.0.0.1:3001/api/v1/refleshToken -X POST -d "accessToken=U1MPQIYQZKD86CYGWKDI04O4R5SK4FEW"
+{
+  "accessToken":"0ILMFDM0JILCLJ5987HYMT2J18BYJDXI",
+  "refreshToken":"U1MPQIYQZKD86CYGWKDI04O4R5SK4FEW",
+  "created":1559287003,
+  "updated":1559287592,
+  "expired":1559373992,
+  "extra":{
+    "id":"5ce8ba5e51603f528e568b47","username":"123","roles":[]
+  }
+}
+```
+
 ## MIT License
 
 Copyright (c) 2018-2020 Double
