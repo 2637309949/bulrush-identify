@@ -24,9 +24,8 @@ func revokeToken(iden *Identify) func(*gin.Context) {
 					"success": true,
 				})
 			} else {
-				c.JSON(http.StatusBadRequest, gin.H{
-					"message": "Revoke token failed, token may not exist",
-				})
+				rushLogger.Warn("revoke token failed,token may not exist")
+				c.JSON(http.StatusBadRequest, gin.H{"message": "revoke token failed, token may not exist"})
 			}
 		}
 		c.Abort()

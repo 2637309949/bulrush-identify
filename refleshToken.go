@@ -23,9 +23,8 @@ func refleshToken(iden *Identify) func(*gin.Context) {
 			if originToken != nil {
 				c.JSON(http.StatusOK, originToken)
 			} else {
-				c.JSON(http.StatusBadRequest, gin.H{
-					"message": "Reflesh token failed, token may not exist",
-				})
+				rushLogger.Warn("reflesh token failed,token may not exist")
+				c.JSON(http.StatusBadRequest, gin.H{"message": "reflesh token failed, token may not exist"})
 			}
 		}
 		c.Abort()

@@ -3,13 +3,10 @@ module github.com/2637309949/bulrush-identify
 go 1.12
 
 require (
-	github.com/2637309949/bulrush-addition v0.0.0-20190605141653-01e70cd1cb76
-	github.com/2637309949/bulrush-identify v0.0.0-20190531073415-116f7ee8683f
+	github.com/2637309949/bulrush v0.0.0-20190611131717-0fd47b94eed2
+	github.com/2637309949/bulrush-addition v0.0.0-20190608111855-725ea7bbda0e
 	github.com/gin-gonic/gin v1.4.0
-	github.com/go-redis/redis v6.15.2+incompatible // indirect
 	github.com/jinzhu/now v1.0.0
-	github.com/onsi/ginkgo v1.8.0 // indirect
-	github.com/onsi/gomega v1.5.0 // indirect
 )
 
 replace golang.org/x/text v0.3.0 => github.com/golang/text v0.3.0

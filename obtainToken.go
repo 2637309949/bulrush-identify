@@ -22,6 +22,7 @@ func obtainToken(iden *Identify) func(c *gin.Context) {
 			c.JSON(http.StatusOK, data)
 			c.Abort()
 		} else {
+			rushLogger.Warn("auth error,%s", err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"message": err.Error(),
 			})

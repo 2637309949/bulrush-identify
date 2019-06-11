@@ -39,9 +39,8 @@ func verifyToken(iden *Identify) func(*gin.Context) {
 				setAccessData(c, rawToken["extra"])
 				c.Next()
 			} else {
-				c.JSON(http.StatusUnauthorized, gin.H{
-					"message": "Invalid token",
-				})
+				rushLogger.Warn("invalid token")
+				c.JSON(http.StatusUnauthorized, gin.H{"message": "invalid token"})
 				c.Abort()
 			}
 		}
