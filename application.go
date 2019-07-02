@@ -7,7 +7,6 @@ package identify
 import (
 	"time"
 
-	"github.com/2637309949/bulrush"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/now"
 )
@@ -28,7 +27,6 @@ type Model interface {
 
 // Identify authentication interface
 type Identify struct {
-	bulrush.PNBase
 	Auth       func(c *gin.Context) (interface{}, error)
 	ExpiresIn  int
 	Routes     RoutesGroup
@@ -90,15 +88,13 @@ func (iden *Identify) VerifyToken(token string) bool {
 }
 
 // Plugin for bulrush
-func (iden *Identify) Plugin() interface{} {
-	return func(router *gin.RouterGroup) {
-		obtainTokenRoute := Some(iden.Routes.ObtainTokenRoute, "/obtainToken").(string)
-		revokeTokenRoute := Some(iden.Routes.RevokeTokenRoute, "/revokeToken").(string)
-		refleshTokenRoute := Some(iden.Routes.RefleshTokenRoute, "/refleshToken").(string)
-		router.Use(accessToken(iden))
-		router.POST(obtainTokenRoute, obtainToken(iden))
-		router.POST(revokeTokenRoute, revokeToken(iden))
-		router.POST(refleshTokenRoute, refleshToken(iden))
-		router.Use(verifyToken(iden))
-	}
+func (iden *Identify) Plugin(router *gin.RouterGroup) {
+	obtainTokenRoute := Some(iden.Routes.ObtainTokenRoute, "/obtainToken").(string)
+	revokeTokenRoute := Some(iden.Routes.RevokeTokenRoute, "/revokeToken").(string)
+	refleshTokenRoute := Some(iden.Routes.RefleshTokenRoute, "/refleshToken").(string)
+	router.Use(accessToken(iden))
+	router.POST(obtainTokenRoute, obtainToken(iden))
+	router.POST(revokeTokenRoute, revokeToken(iden))
+	router.POST(refleshTokenRoute, refleshToken(iden))
+	router.Use(verifyToken(iden))
 }
