@@ -90,7 +90,7 @@ func (iden *Identify) VerifyToken(token string) bool {
 }
 
 // Plugin for bulrush
-func (iden *Identify) Plugin() bulrush.PNRet {
+func (iden *Identify) Plugin() interface{} {
 	return func(router *gin.RouterGroup) {
 		obtainTokenRoute := Some(iden.Routes.ObtainTokenRoute, "/obtainToken").(string)
 		revokeTokenRoute := Some(iden.Routes.RevokeTokenRoute, "/revokeToken").(string)
