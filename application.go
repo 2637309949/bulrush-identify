@@ -11,40 +11,40 @@ import (
 	"github.com/jinzhu/now"
 )
 
-// RoutesGroup iden routes
-type RoutesGroup struct {
-	ObtainTokenRoute  string
-	RevokeTokenRoute  string
-	RefleshTokenRoute string
-}
-
-// Model token store
-type Model interface {
-	Save(map[string]interface{})
-	Find(string, string) map[string]interface{}
-	Revoke(string) bool
-}
-
-// Identify authentication interface
-type Identify struct {
-	Auth       func(c *gin.Context) (interface{}, error)
-	ExpiresIn  int
-	Routes     RoutesGroup
-	Model      Model
-	FakeURLs   []interface{}
-	FakeTokens []interface{}
-}
+type (
+	// Identify authentication interface
+	Identify struct {
+		Auth       func(c *gin.Context) (interface{}, error)
+		ExpiresIn  int
+		Routes     RoutesGroup
+		Model      Model
+		FakeURLs   []interface{}
+		FakeTokens []interface{}
+	}
+	// Model token store
+	Model interface {
+		Save(map[string]interface{})
+		Find(string, string) map[string]interface{}
+		Revoke(string) bool
+	}
+	// RoutesGroup iden routes
+	RoutesGroup struct {
+		ObtainTokenRoute  string
+		RevokeTokenRoute  string
+		RefleshTokenRoute string
+	}
+)
 
 // ObtainToken accessToken
-func (iden *Identify) ObtainToken(authData interface{}) interface{} {
-	if authData != nil {
+func (iden *Identify) ObtainToken(auth interface{}) interface{} {
+	if auth != nil {
 		data := map[string]interface{}{
 			"accessToken":  RandString(32),
 			"refreshToken": RandString(32),
 			"expiresIn":    Some(iden.ExpiresIn, 86400),
 			"created":      now.New(time.Now()).Unix(),
 			"updated":      now.New(time.Now()).Unix(),
-			"extra":        authData,
+			"extra":        auth,
 		}
 		iden.Model.Save(data)
 		return data
@@ -88,7 +88,7 @@ func (iden *Identify) VerifyToken(token string) bool {
 }
 
 // Plugin for bulrush
-func (iden *Identify) Plugin(router *gin.RouterGroup) {
+func (iden *Identify) Plugin(router *gin.RouterGroup, httpProxy *gin.Engine) {
 	obtainTokenRoute := Some(iden.Routes.ObtainTokenRoute, "/obtainToken").(string)
 	revokeTokenRoute := Some(iden.Routes.RevokeTokenRoute, "/revokeToken").(string)
 	refleshTokenRoute := Some(iden.Routes.RefleshTokenRoute, "/refleshToken").(string)

@@ -4,20 +4,23 @@
 
 package identify
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+)
+
+const key = "accessToken"
 
 func accessToken(iden *Identify) func(*gin.Context) {
 	return func(c *gin.Context) {
 		var accessToken string
-		queryToken := c.Query("accessToken")
-		formToken := c.PostForm("accessToken")
-		headerToken := c.Request.Header.Get("Authorization")
-		if queryToken != "" {
+		if queryToken := c.Query(key); queryToken != "" {
 			accessToken = queryToken
-		} else if formToken != "" {
+		} else if formToken := c.PostForm(key); formToken != "" {
 			accessToken = formToken
-		} else if headerToken != "" {
+		} else if headerToken := c.Request.Header.Get(key); headerToken != "" {
 			accessToken = headerToken
+		} else if cookieToken, err := c.Cookie(key); err == nil {
+			accessToken = cookieToken
 		}
 		setAccessToken(c, accessToken)
 		c.Next()
