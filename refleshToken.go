@@ -8,32 +8,35 @@ import (
 	"net/http"
 	"time"
 
+	utils "github.com/2637309949/bulrush-utils"
 	"github.com/gin-gonic/gin"
 )
 
 func refleshToken(iden *Identify) func(*gin.Context) {
 	return func(c *gin.Context) {
-		token := iden.GetToken(c)
-		if token != nil {
-			token, err := iden.Model.Find(token)
-			if err != nil {
-				c.JSON(http.StatusOK, gin.H{"message": err.Error()})
-				return
-			}
-			if err := iden.Model.Revoke(token); err != nil {
-				c.JSON(http.StatusOK, gin.H{"message": err.Error()})
-				return
-			}
-			token.CreatedAt = time.Now().Unix()
-			token.UpdatedAt = time.Now().Unix()
-			token.AccessToken = RandString(32)
-			token, err = iden.Model.Save(token)
-			if err != nil {
-				c.JSON(http.StatusOK, gin.H{"message": err.Error()})
-				return
-			}
-			c.JSON(http.StatusInternalServerError, token)
+		ret, err := utils.Chain(
+			func(ret interface{}) (interface{}, error) {
+				return iden.GetToken(c), nil
+			},
+			func(ret interface{}) (interface{}, error) {
+				token := ret.(*Token)
+				return token, iden.Model.Revoke(token)
+			},
+			func(ret interface{}) (interface{}, error) {
+				token := ret.(*Token)
+				token.CreatedAt = time.Now().Unix()
+				token.UpdatedAt = time.Now().Unix()
+				token.AccessToken = RandString(32)
+				return iden.Model.Save(token)
+			},
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": err.Error(),
+			})
+			return
 		}
-		c.Abort()
+		token := ret.(*Token)
+		c.JSON(http.StatusInternalServerError, token)
 	}
 }

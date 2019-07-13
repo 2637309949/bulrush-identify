@@ -7,32 +7,36 @@ package identify
 import (
 	"net/http"
 
+	utils "github.com/2637309949/bulrush-utils"
 	"github.com/gin-gonic/gin"
 )
 
 func obtainToken(iden *Identify) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		result, err := iden.Auth(c)
-		if err != nil {
+		if _, err := utils.Chain(
+			func(ret interface{}) (interface{}, error) {
+				return iden.Auth(c)
+			},
+			func(ret interface{}) (interface{}, error) {
+				return iden.ObtainToken(ret)
+			},
+			func(ret interface{}) (interface{}, error) {
+				token := ret.(*Token)
+				c.SetCookie(tokenKey, token.AccessToken, 60*60*24, "/", "", false, true)
+				c.JSON(http.StatusOK, map[string]interface{}{
+					"AccessToken":  token.AccessToken,
+					"RefreshToken": token.RefreshToken,
+					"ExpiresIn":    token.ExpiresIn,
+					"CreatedAt":    token.CreatedAt,
+					"UpdatedAt":    token.UpdatedAt,
+				})
+				return nil, nil
+			},
+		); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"message": err.Error(),
 			})
 			return
 		}
-		data, err := iden.ObtainToken(result)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": err.Error(),
-			})
-			return
-		}
-		c.SetCookie(tokenKey, data.AccessToken, 60*60*24, "/", "", false, true)
-		c.JSON(http.StatusOK, map[string]interface{}{
-			"AccessToken":  data.AccessToken,
-			"RefreshToken": data.RefreshToken,
-			"ExpiresIn":    data.ExpiresIn,
-			"CreatedAt":    data.CreatedAt,
-			"UpdatedAt":    data.UpdatedAt,
-		})
 	}
 }

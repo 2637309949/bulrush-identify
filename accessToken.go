@@ -5,28 +5,24 @@
 package identify
 
 import (
+	utils "github.com/2637309949/bulrush-utils"
 	"github.com/gin-gonic/gin"
 )
 
 const tokenKey = "accessToken"
 
-func token(c *gin.Context) string {
-	var accessToken string
-	if queryToken := c.Query(tokenKey); queryToken != "" {
-		accessToken = queryToken
-	} else if formToken := c.PostForm(tokenKey); formToken != "" {
-		accessToken = formToken
-	} else if headerToken := c.Request.Header.Get(tokenKey); headerToken != "" {
-		accessToken = headerToken
-	} else if cookieToken, err := c.Cookie(tokenKey); err == nil {
-		accessToken = cookieToken
-	}
-	return accessToken
-}
-
 func accessToken(iden *Identify) func(*gin.Context) {
 	return func(c *gin.Context) {
-		iden.setToken(c, &Token{AccessToken: token(c)})
+		token := utils.Until(
+			c.Query(tokenKey),
+			c.PostForm(tokenKey),
+			c.Request.Header.Get(tokenKey),
+			func() interface{} {
+				value, _ := c.Cookie(tokenKey)
+				return value
+			},
+		).(string)
+		iden.setToken(c, &Token{AccessToken: token})
 		c.Next()
 	}
 }

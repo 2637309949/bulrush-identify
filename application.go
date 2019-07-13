@@ -9,12 +9,11 @@ import (
 	"net/http"
 	"time"
 
+	utils "github.com/2637309949/bulrush-utils"
 	"github.com/gin-gonic/gin"
 )
 
-const (
-	ctxIndenKey = "identify"
-)
+const ctxKey = "identify"
 
 type (
 	// Identify authentication interface
@@ -68,18 +67,10 @@ func New() *Identify {
 
 // Init Identify
 func (iden *Identify) routesGroup() *Identify {
-	if iden.Routes.ObtainTokenRoute == "" {
-		iden.Routes.ObtainTokenRoute = "/obtainToken"
-	}
-	if iden.Routes.RevokeTokenRoute == "" {
-		iden.Routes.RevokeTokenRoute = "/revokeToken"
-	}
-	if iden.Routes.RefleshTokenRoute == "" {
-		iden.Routes.RefleshTokenRoute = "/refleshToken"
-	}
-	if iden.Routes.IdenTokenRoute == "" {
-		iden.Routes.IdenTokenRoute = "/idenToken"
-	}
+	iden.Routes.ObtainTokenRoute = utils.Some(iden.Routes.ObtainTokenRoute, "/obtainToken").(string)
+	iden.Routes.RevokeTokenRoute = utils.Some(iden.Routes.RevokeTokenRoute, "/revokeToken").(string)
+	iden.Routes.RefleshTokenRoute = utils.Some(iden.Routes.RefleshTokenRoute, "/refleshToken").(string)
+	iden.Routes.IdenTokenRoute = utils.Some(iden.Routes.IdenTokenRoute, "/idenToken").(string)
 	return iden
 }
 
@@ -104,7 +95,7 @@ func (iden *Identify) ObtainToken(extra interface{}) (*Token, error) {
 
 // GetToken get from ctx
 func (iden *Identify) GetToken(ctx *gin.Context) *Token {
-	if token, exists := ctx.Get(ctxIndenKey); exists {
+	if token, exists := ctx.Get(ctxKey); exists {
 		return token.(*Token)
 	}
 	return nil
@@ -112,15 +103,15 @@ func (iden *Identify) GetToken(ctx *gin.Context) *Token {
 
 // setToken set to ctx
 func (iden *Identify) setToken(ctx *gin.Context, token *Token) {
-	ctx.Set(ctxIndenKey, token)
+	ctx.Set(ctxKey, token)
 }
 
 // Plugin for bulrush
 func (iden *Identify) Plugin(router *gin.RouterGroup, httpProxy *gin.Engine) {
 	router.Use(accessToken(iden))
 	router.POST(iden.Routes.ObtainTokenRoute, obtainToken(iden))
-	router.POST(iden.Routes.RevokeTokenRoute, revokeToken(iden))
-	router.POST(iden.Routes.RefleshTokenRoute, refleshToken(iden))
 	router.Use(verifyToken(iden))
-	router.GET(iden.Routes.IdenTokenRoute, iden.Iden)
+	router.POST(iden.Routes.RefleshTokenRoute, refleshToken(iden))
+	router.POST(iden.Routes.RevokeTokenRoute, revokeToken(iden))
+	router.POST(iden.Routes.IdenTokenRoute, iden.Iden)
 }
