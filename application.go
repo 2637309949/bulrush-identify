@@ -5,96 +5,122 @@
 package identify
 
 import (
+	"errors"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/now"
+)
+
+const (
+	ctxIndenKey = "identify"
 )
 
 type (
 	// Identify authentication interface
 	Identify struct {
 		Auth       func(c *gin.Context) (interface{}, error)
-		ExpiresIn  int
+		Iden       func(c *gin.Context)
+		ExpiresIn  int64
 		Routes     RoutesGroup
 		Model      Model
-		FakeURLs   []interface{}
-		FakeTokens []interface{}
+		FakeURLs   []string
+		FakeTokens []string
 	}
 	// Model token store
 	Model interface {
-		Save(map[string]interface{})
-		Find(string, string) map[string]interface{}
-		Revoke(string) bool
+		Save(*Token) (*Token, error)
+		Find(*Token) (*Token, error)
+		Revoke(*Token) error
 	}
 	// RoutesGroup iden routes
 	RoutesGroup struct {
 		ObtainTokenRoute  string
 		RevokeTokenRoute  string
 		RefleshTokenRoute string
+		IdenTokenRoute    string
+	}
+	// Token defined Token info
+	Token struct {
+		AccessToken  string
+		RefreshToken string
+		ExpiresIn    int64
+		CreatedAt    int64
+		UpdatedAt    int64
+		Extra        interface{}
 	}
 )
 
+// New defined return a new struct
+func New() *Identify {
+	iden := &Identify{
+		ExpiresIn: 86400,
+		Routes:    RoutesGroup{},
+		Auth: func(c *gin.Context) (interface{}, error) {
+			return nil, errors.New("user authentication failed")
+		},
+	}
+	iden.Iden = func(c *gin.Context) {
+		c.JSON(http.StatusOK, iden.GetToken(c).Extra)
+	}
+	return iden
+}
+
+// Init Identify
+func (iden *Identify) routesGroup() *Identify {
+	if iden.Routes.ObtainTokenRoute == "" {
+		iden.Routes.ObtainTokenRoute = "/obtainToken"
+	}
+	if iden.Routes.RevokeTokenRoute == "" {
+		iden.Routes.RevokeTokenRoute = "/revokeToken"
+	}
+	if iden.Routes.RefleshTokenRoute == "" {
+		iden.Routes.RefleshTokenRoute = "/refleshToken"
+	}
+	if iden.Routes.IdenTokenRoute == "" {
+		iden.Routes.IdenTokenRoute = "/idenToken"
+	}
+	return iden
+}
+
+// Init Identify
+func (iden *Identify) Init(init func(*Identify)) *Identify {
+	init(iden)
+	iden.routesGroup()
+	return iden
+}
+
 // ObtainToken accessToken
-func (iden *Identify) ObtainToken(auth interface{}) interface{} {
-	if auth != nil {
-		data := map[string]interface{}{
-			"accessToken":  RandString(32),
-			"refreshToken": RandString(32),
-			"expiresIn":    Some(iden.ExpiresIn, 86400),
-			"created":      now.New(time.Now()).Unix(),
-			"updated":      now.New(time.Now()).Unix(),
-			"extra":        auth,
-		}
-		iden.Model.Save(data)
-		return data
+func (iden *Identify) ObtainToken(extra interface{}) (*Token, error) {
+	return iden.Model.Save(&Token{
+		AccessToken:  RandString(32),
+		RefreshToken: RandString(32),
+		ExpiresIn:    iden.ExpiresIn,
+		CreatedAt:    time.Now().Unix(),
+		UpdatedAt:    time.Now().Unix(),
+		Extra:        extra,
+	})
+}
+
+// GetToken get from ctx
+func (iden *Identify) GetToken(ctx *gin.Context) *Token {
+	if token, exists := ctx.Get(ctxIndenKey); exists {
+		return token.(*Token)
 	}
 	return nil
 }
 
-// RevokeToken accessToken
-func (iden *Identify) RevokeToken(token string) bool {
-	return iden.Model.Revoke(token)
-}
-
-// RefleshToken accessToken
-func (iden *Identify) RefleshToken(refreshToken string) interface{} {
-	originToken := iden.Model.Find("", refreshToken)
-	if originToken != nil {
-		accessToken, _ := originToken["accessToken"]
-		iden.Model.Revoke(accessToken.(string))
-		originToken["created"] = now.New(time.Now()).Unix()
-		originToken["updated"] = now.New(time.Now()).Unix()
-		originToken["accessToken"] = RandString(32)
-		iden.Model.Save(originToken)
-		return originToken
-	}
-	return nil
-}
-
-// VerifyToken accessToken
-func (iden *Identify) VerifyToken(token string) bool {
-	verifyToken := iden.Model.Find(token, "")
-	now := time.Now().Unix()
-	if verifyToken == nil {
-		return false
-	}
-	expiresIn, _ := verifyToken["expiresIn"]
-	created, _ := verifyToken["created"]
-	if (expiresIn.(float64) + created.(float64)) < float64(now) {
-		return false
-	}
-	return true
+// setToken set to ctx
+func (iden *Identify) setToken(ctx *gin.Context, token *Token) {
+	ctx.Set(ctxIndenKey, token)
 }
 
 // Plugin for bulrush
 func (iden *Identify) Plugin(router *gin.RouterGroup, httpProxy *gin.Engine) {
-	obtainTokenRoute := Some(iden.Routes.ObtainTokenRoute, "/obtainToken").(string)
-	revokeTokenRoute := Some(iden.Routes.RevokeTokenRoute, "/revokeToken").(string)
-	refleshTokenRoute := Some(iden.Routes.RefleshTokenRoute, "/refleshToken").(string)
 	router.Use(accessToken(iden))
-	router.POST(obtainTokenRoute, obtainToken(iden))
-	router.POST(revokeTokenRoute, revokeToken(iden))
-	router.POST(refleshTokenRoute, refleshToken(iden))
+	router.POST(iden.Routes.ObtainTokenRoute, obtainToken(iden))
+	router.POST(iden.Routes.RevokeTokenRoute, revokeToken(iden))
+	router.POST(iden.Routes.RefleshTokenRoute, refleshToken(iden))
 	router.Use(verifyToken(iden))
+	router.GET(iden.Routes.IdenTokenRoute, iden.Iden)
 }

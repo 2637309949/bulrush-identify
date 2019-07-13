@@ -6,22 +6,33 @@ package identify
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 func refleshToken(iden *Identify) func(*gin.Context) {
 	return func(c *gin.Context) {
-		refreshToken := GetAccessToken(c)
-		if refreshToken != "" {
-			originToken := iden.RefleshToken(refreshToken)
-			// reflesh and save
-			if originToken != nil {
-				c.JSON(http.StatusOK, originToken)
-			} else {
-				rushLogger.Warn("reflesh token failed,token may not exist")
-				c.JSON(http.StatusBadRequest, gin.H{"message": "reflesh token failed, token may not exist"})
+		token := iden.GetToken(c)
+		if token != nil {
+			token, err := iden.Model.Find(token)
+			if err != nil {
+				c.JSON(http.StatusOK, gin.H{"message": err.Error()})
+				return
 			}
+			if err := iden.Model.Revoke(token); err != nil {
+				c.JSON(http.StatusOK, gin.H{"message": err.Error()})
+				return
+			}
+			token.CreatedAt = time.Now().Unix()
+			token.UpdatedAt = time.Now().Unix()
+			token.AccessToken = RandString(32)
+			token, err = iden.Model.Save(token)
+			if err != nil {
+				c.JSON(http.StatusOK, gin.H{"message": err.Error()})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, token)
 		}
 		c.Abort()
 	}

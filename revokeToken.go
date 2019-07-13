@@ -12,18 +12,16 @@ import (
 
 func revokeToken(iden *Identify) func(*gin.Context) {
 	return func(c *gin.Context) {
-		accessToken := GetAccessToken(c)
-		if accessToken != "" {
-			result := iden.RevokeToken(accessToken)
-			if result {
-				c.JSON(http.StatusOK, gin.H{
-					"success": true,
-				})
-			} else {
+		token := iden.GetToken(c)
+		if token != nil {
+			if err := iden.Model.Revoke(token); err != nil {
 				rushLogger.Warn("revoke token failed,token may not exist")
-				c.JSON(http.StatusBadRequest, gin.H{"message": "revoke token failed, token may not exist"})
+				c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+				return
 			}
+			c.JSON(http.StatusOK, gin.H{
+				"message": "ok",
+			})
 		}
-		c.Abort()
 	}
 }

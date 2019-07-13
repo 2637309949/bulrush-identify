@@ -6,32 +6,7 @@ package identify
 
 import (
 	"math/rand"
-
-	"github.com/gin-gonic/gin"
 )
-
-// GetAccessToken get from ctx
-func GetAccessToken(ctx *gin.Context) string {
-	accessToken, _ := ctx.Get("accessToken")
-	return accessToken.(string)
-}
-
-func setAccessToken(ctx *gin.Context, accessToken string) {
-	ctx.Set("accessToken", accessToken)
-}
-
-// GetAccessData get from ctx
-func GetAccessData(ctx *gin.Context) map[string]interface{} {
-	accessData, _ := ctx.Get("accessData")
-	if accessData != nil {
-		return accessData.(map[string]interface{})
-	}
-	return nil
-}
-
-func setAccessData(ctx *gin.Context, data interface{}) {
-	ctx.Set("accessData", data)
-}
 
 // RandString gen random string
 func RandString(n int) string {
@@ -49,17 +24,4 @@ func Some(target interface{}, initValue interface{}) interface{} {
 		return target
 	}
 	return initValue
-}
-
-// Find target from array
-func Find(arrs []interface{}, matcher func(interface{}) bool) interface{} {
-	var target interface{}
-	for _, item := range arrs {
-		match := matcher(item)
-		if match {
-			target = item
-			break
-		}
-	}
-	return target
 }

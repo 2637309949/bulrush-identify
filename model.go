@@ -5,9 +5,12 @@
 package identify
 
 import (
+	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/2637309949/bulrush-addition/redis"
+	goRedis "github.com/go-redis/redis"
 )
 
 // RedisModel adapter for redis
@@ -17,40 +20,55 @@ type RedisModel struct {
 }
 
 // Save save a token
-func (group *RedisModel) Save(token map[string]interface{}) {
-	accessToken, _ := token["accessToken"].(string)
-	refreshToken, _ := token["refreshToken"].(string)
-	group.Redis.API.SetJSON("TOKEN:"+accessToken, token, 36*time.Hour)
-	group.Redis.API.SetJSON("TOKEN:"+refreshToken, token, 36*time.Hour)
+func (model *RedisModel) Save(token *Token) (*Token, error) {
+	dataByte, err := json.Marshal(token)
+	if err != nil {
+		return nil, err
+	}
+	if err = model.Redis.Client.Set("TOKEN:"+token.AccessToken, string(dataByte), 24*time.Hour).Err(); err != nil {
+		return nil, err
+	}
+	if err = model.Redis.Client.Set("TOKEN:"+token.RefreshToken, string(dataByte), 24*time.Hour).Err(); err != nil {
+		return nil, err
+	}
+	return token, nil
 }
 
 // Revoke revoke a token
-func (group *RedisModel) Revoke(accessToken string) bool {
-	imapGet, _ := group.Redis.API.GetJSON("TOKEN:" + accessToken)
-	refreshToken, _ := imapGet["refreshToken"].(string)
-	if status, err := group.Redis.Client.Del("TOKEN:" + accessToken).Result(); err != nil || status != 1 {
-		return false
+func (model *RedisModel) Revoke(token *Token) error {
+	if _, err := model.Redis.Client.Del("TOKEN:" + token.AccessToken).Result(); err != nil {
+		return err
 	}
-	if status, err := group.Redis.Client.Del("TOKEN:" + refreshToken).Result(); err != nil || status != 1 {
-		return false
+	if _, err := model.Redis.Client.Del("TOKEN:" + token.RefreshToken).Result(); err != nil {
+		return err
 	}
-	return true
+	return nil
 }
 
 // Find find a token
-func (group *RedisModel) Find(accessToken string, refreshToken string) map[string]interface{} {
-	if accessToken != "" {
-		imapGet, _ := group.Redis.API.GetJSON("TOKEN:" + accessToken)
-		accessTokenRaw, _ := imapGet["accessToken"].(string)
-		if accessTokenRaw == accessToken {
-			return imapGet
+func (model *RedisModel) Find(token *Token) (*Token, error) {
+	if token.AccessToken != "" {
+		data, err := model.Redis.Client.Get("TOKEN:" + token.AccessToken).Result()
+		if err == goRedis.Nil {
+			return nil, errors.New("invalid token")
+		} else if err != nil {
+			return nil, err
 		}
-	} else if refreshToken != "" {
-		imapGet, _ := group.Redis.API.GetJSON("TOKEN:" + refreshToken)
-		refreshTokenRaw, _ := imapGet["refreshToken"].(string)
-		if refreshTokenRaw == refreshToken {
-			return imapGet
+		if err := json.Unmarshal([]byte(data), token); err != nil {
+			return nil, err
 		}
+		return token, nil
+	} else if token.RefreshToken != "" {
+		data, err := model.Redis.Client.Get("TOKEN:" + token.RefreshToken).Result()
+		if err == goRedis.Nil {
+			return nil, errors.New("invalid token")
+		} else if err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal([]byte(data), token); err != nil {
+			return nil, err
+		}
+		return token, nil
 	}
-	return nil
+	return nil, errors.New("no token found")
 }

@@ -7,8 +7,10 @@ package identify
 import (
 	"net/http"
 	"regexp"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/thoas/go-funk"
 )
 
 func verifyToken(iden *Identify) func(*gin.Context) {
@@ -16,26 +18,38 @@ func verifyToken(iden *Identify) func(*gin.Context) {
 	FakeTokens := iden.FakeTokens
 	return func(c *gin.Context) {
 		reqPath := c.Request.URL.Path
-		accessToken := GetAccessToken(c)
-		fakeURL := Find(FakeURLs, func(regex interface{}) bool {
-			r, _ := regexp.Compile(regex.(string))
+
+		token := iden.GetToken(c)
+		if token == nil {
+			rushLogger.Warn("invalid token")
+			c.JSON(http.StatusUnauthorized, gin.H{"message": "invalid token"})
+			c.Abort()
+			return
+		}
+
+		fakeURL := funk.Find(FakeURLs, func(regex string) bool {
+			r, _ := regexp.Compile(regex)
 			return r.MatchString(reqPath)
 		})
-		fakeToken := Find(FakeTokens, func(token interface{}) bool {
-			return accessToken == token.(string)
+		fakeToken := funk.Find(FakeTokens, func(fake string) bool {
+			return token.AccessToken == fake
 		})
+
 		if fakeURL != nil {
 			c.Next()
 		} else if fakeToken != nil {
 			c.Next()
 		} else {
-			ret := iden.VerifyToken(accessToken)
-			if ret {
-				rawToken := iden.Model.Find(accessToken, "")
-				setAccessData(c, rawToken["extra"])
+			token, err := iden.Model.Find(token)
+			if err != nil {
+				c.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
+				c.Abort()
+				return
+			}
+			if (token.ExpiresIn + token.CreatedAt) > time.Now().Unix() {
+				iden.setToken(c, token)
 				c.Next()
 			} else {
-				rushLogger.Warn("invalid token")
 				c.JSON(http.StatusUnauthorized, gin.H{"message": "invalid token"})
 				c.Abort()
 			}
