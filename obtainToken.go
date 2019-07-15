@@ -13,30 +13,28 @@ import (
 
 func obtainToken(iden *Identify) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		if _, err := utils.Chain(
+		data, err := utils.Chain(
 			func(ret interface{}) (interface{}, error) {
 				return iden.Auth(c)
 			},
 			func(ret interface{}) (interface{}, error) {
 				return iden.ObtainToken(ret)
 			},
-			func(ret interface{}) (interface{}, error) {
-				token := ret.(*Token)
-				c.SetCookie(tokenKey, token.AccessToken, 60*60*24, "/", "", false, true)
-				c.JSON(http.StatusOK, map[string]interface{}{
-					"AccessToken":  token.AccessToken,
-					"RefreshToken": token.RefreshToken,
-					"ExpiresIn":    token.ExpiresIn,
-					"CreatedAt":    token.CreatedAt,
-					"UpdatedAt":    token.UpdatedAt,
-				})
-				return nil, nil
-			},
-		); err != nil {
+		)
+		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"message": err.Error(),
 			})
 			return
 		}
+		token := data.(*Token)
+		c.SetCookie(tokenKey, token.AccessToken, 60*60*24, "/", "", false, true)
+		c.JSON(http.StatusOK, map[string]interface{}{
+			"AccessToken":  token.AccessToken,
+			"RefreshToken": token.RefreshToken,
+			"ExpiresIn":    token.ExpiresIn,
+			"CreatedAt":    token.CreatedAt,
+			"UpdatedAt":    token.UpdatedAt,
+		})
 	}
 }
