@@ -21,9 +21,10 @@ func verifyToken(iden *Identify) func(*gin.Context) {
 
 		token := iden.GetToken(c)
 		if token == nil {
-			rushLogger.Warn("invalid token")
-			c.JSON(http.StatusUnauthorized, gin.H{"message": "invalid token"})
-			c.Abort()
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"message": "Internal Server Error",
+				"stack":   "invalid token",
+			})
 			return
 		}
 

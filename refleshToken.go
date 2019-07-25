@@ -31,8 +31,9 @@ func refleshToken(iden *Identify) func(*gin.Context) {
 			},
 		)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": err.Error(),
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"message": "Internal Server Error",
+				"stack":   err.Error(),
 			})
 			return
 		}

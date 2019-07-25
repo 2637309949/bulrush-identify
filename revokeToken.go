@@ -15,8 +15,10 @@ func revokeToken(iden *Identify) func(*gin.Context) {
 		token := iden.GetToken(c)
 		if token != nil {
 			if err := iden.Model.Revoke(token); err != nil {
-				rushLogger.Warn("revoke token failed,token may not exist")
-				c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+					"message": "Internal Server Error",
+					"stack":   err.Error(),
+				})
 				return
 			}
 			c.JSON(http.StatusOK, gin.H{
