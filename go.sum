@@ -3,8 +3,8 @@ cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMT
 cloud.google.com/go v0.37.4/go.mod h1:NHPJ89PdicEuT9hdPXMROBD91xc5uRDxsMtSB16k7hw=
 github.com/2637309949/bulrush v0.0.0-20190607030313-28d446049b76/go.mod h1:qPR8dFYrIA6dfaRftuJv1Fb5qo25GDbdDQZRtHlxf1g=
 github.com/2637309949/bulrush v0.0.0-20190615094031-919971fe3950/go.mod h1:0LqTAK58wUHnxumAqF8R+S/qluqJP9rlB/nhBB6RTmg=
-github.com/2637309949/bulrush v0.0.0-20190711122310-ade4b0f7d1d3 h1:x0nhwOcnDF6lL9aje1CDxJ24UOikG2TV2IL/KZKbV14=
-github.com/2637309949/bulrush v0.0.0-20190711122310-ade4b0f7d1d3/go.mod h1:ahYt5FkpYFOcgx1HCHgO9fiPyd2PM8rzdq6ZKu+J7t8=
+github.com/2637309949/bulrush v0.0.0-20190725143958-5a43e012d374 h1:17l0XwvrxIgqa9JdZ3eFl4n+aL4sX7X2zoPkRPA0uX4=
+github.com/2637309949/bulrush v0.0.0-20190725143958-5a43e012d374/go.mod h1:7mLYkrg+7zzcW7fMK9il2Q/NirqVXWttUbsJbrCpCjA=
 github.com/2637309949/bulrush-addition v0.0.0-20190605141653-01e70cd1cb76 h1:eQvp9ClgERxur3O/+8+DfpRI1m/wBND8MHiMcbbGkwE=
 github.com/2637309949/bulrush-addition v0.0.0-20190605141653-01e70cd1cb76/go.mod h1:Y/xV7WL+ym2DWmG86jxqrF6QMgY8SXkJMcvL4JJh8qA=
 github.com/2637309949/bulrush-addition v0.0.0-20190608111855-725ea7bbda0e h1:lUuIaoZAN/9wtbEirlUsYn6BIN+KmJysqupEBgKzG4Q=
