@@ -9,14 +9,14 @@ import (
 	"errors"
 	"time"
 
-	"github.com/2637309949/bulrush-addition/redis"
+	redisext "github.com/2637309949/bulrush-addition/redis"
 	goRedis "github.com/go-redis/redis"
 )
 
 // RedisModel adapter for redis
 type RedisModel struct {
 	Model
-	Redis *redis.Redis
+	Redis *redisext.Redis
 }
 
 // Save save a token
