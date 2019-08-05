@@ -5,7 +5,7 @@
 package identify
 
 import (
-	utils "github.com/2637309949/bulrush-utils"
+	"github.com/2637309949/bulrush-utils/funcs"
 	"github.com/gin-gonic/gin"
 )
 
@@ -13,7 +13,7 @@ const tokenKey = "accessToken"
 
 func accessToken(iden *Identify) func(*gin.Context) {
 	return func(c *gin.Context) {
-		token := utils.Until(
+		token := funcs.Until(
 			c.Query(tokenKey),
 			c.PostForm(tokenKey),
 			c.Request.Header.Get(tokenKey),

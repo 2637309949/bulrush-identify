@@ -8,13 +8,13 @@ import (
 	"net/http"
 	"time"
 
-	utils "github.com/2637309949/bulrush-utils"
+	"github.com/2637309949/bulrush-utils/funcs"
 	"github.com/gin-gonic/gin"
 )
 
 func refleshToken(iden *Identify) func(*gin.Context) {
 	return func(c *gin.Context) {
-		ret, err := utils.Chain(
+		ret, err := funcs.Chain(
 			func(ret interface{}) (interface{}, error) {
 				return iden.GetToken(c), nil
 			},
