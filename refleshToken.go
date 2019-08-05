@@ -38,6 +38,6 @@ func refleshToken(iden *Identify) func(*gin.Context) {
 			return
 		}
 		token := ret.(*Token)
-		c.JSON(http.StatusInternalServerError, token)
+		c.JSON(http.StatusOK, token)
 	}
 }
