@@ -7,7 +7,6 @@ package identify
 import (
 	"net/http"
 	"regexp"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/thoas/go-funk"
@@ -47,7 +46,7 @@ func verifyToken(iden *Identify) func(*gin.Context) {
 				c.Abort()
 				return
 			}
-			if (token.ExpiresIn + token.CreatedAt) > time.Now().Unix() {
+			if token.ISValid() {
 				iden.setToken(c, token)
 				c.Next()
 			} else {

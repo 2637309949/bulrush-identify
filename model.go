@@ -5,7 +5,6 @@
 package identify
 
 import (
-	"encoding/json"
 	"errors"
 	"time"
 
@@ -21,14 +20,14 @@ type RedisModel struct {
 
 // Save save a token
 func (model *RedisModel) Save(token *Token) (*Token, error) {
-	dataByte, err := json.Marshal(token)
+	data, err := token.Marshal()
 	if err != nil {
 		return nil, err
 	}
-	if err = model.Redis.Client.Set("TOKEN:"+token.AccessToken, string(dataByte), 24*time.Hour).Err(); err != nil {
+	if err = model.Redis.Client.Set("TOKEN:"+token.AccessToken, data, 24*time.Hour).Err(); err != nil {
 		return nil, err
 	}
-	if err = model.Redis.Client.Set("TOKEN:"+token.RefreshToken, string(dataByte), 24*time.Hour).Err(); err != nil {
+	if err = model.Redis.Client.Set("TOKEN:"+token.RefreshToken, data, 24*time.Hour).Err(); err != nil {
 		return nil, err
 	}
 	return token, nil
@@ -54,10 +53,7 @@ func (model *RedisModel) Find(token *Token) (*Token, error) {
 		} else if err != nil {
 			return nil, err
 		}
-		if err := json.Unmarshal([]byte(data), token); err != nil {
-			return nil, err
-		}
-		return token, nil
+		return token, token.Unmarshal(data)
 	} else if token.RefreshToken != "" {
 		data, err := model.Redis.Client.Get("TOKEN:" + token.RefreshToken).Result()
 		if err == goRedis.Nil {
@@ -65,10 +61,7 @@ func (model *RedisModel) Find(token *Token) (*Token, error) {
 		} else if err != nil {
 			return nil, err
 		}
-		if err := json.Unmarshal([]byte(data), token); err != nil {
-			return nil, err
-		}
-		return token, nil
+		return token, token.Unmarshal(data)
 	}
 	return nil, errors.New("no token found")
 }

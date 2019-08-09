@@ -5,6 +5,7 @@
 package identify
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"time"
@@ -13,7 +14,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const ctxKey = "identify"
+// IdenKey defined ctx key
+const IdenKey = "identify"
 
 type (
 	// Identify authentication interface
@@ -49,6 +51,36 @@ type (
 		Extra        interface{}
 	}
 )
+
+// Unmarshal defined from json
+func (t *Token) Unmarshal(data string) error {
+	return json.Unmarshal([]byte(data), t)
+}
+
+// Marshal defined to json
+func (t *Token) Marshal() (string, error) {
+	dataByte, err := json.Marshal(t)
+	return string(dataByte), err
+}
+
+// MarshalExtra defined Extra to spec type
+func (t *Token) MarshalExtra(target interface{}) error {
+	dataByte, err := json.Marshal(t.Extra)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(dataByte, target)
+}
+
+// ExtraValue defined Extra to spec type
+func (t *Token) ExtraValue(key string) interface{} {
+	return t.Extra.(map[string]interface{})[key]
+}
+
+// ISValid defined token ISValid
+func (t *Token) ISValid() bool {
+	return (t.ExpiresIn + t.CreatedAt) > time.Now().Unix()
+}
 
 // New defined return a new struct
 func New() *Identify {
@@ -95,7 +127,7 @@ func (iden *Identify) ObtainToken(extra interface{}) (*Token, error) {
 
 // GetToken get from ctx
 func (iden *Identify) GetToken(ctx *gin.Context) *Token {
-	if token, exists := ctx.Get(ctxKey); exists {
+	if token, exists := ctx.Get(IdenKey); exists {
 		return token.(*Token)
 	}
 	return nil
@@ -103,7 +135,7 @@ func (iden *Identify) GetToken(ctx *gin.Context) *Token {
 
 // setToken set to ctx
 func (iden *Identify) setToken(ctx *gin.Context, token *Token) {
-	ctx.Set(ctxKey, token)
+	ctx.Set(IdenKey, token)
 }
 
 // Plugin for bulrush
