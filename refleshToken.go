@@ -20,20 +20,19 @@ func refleshToken(iden *Identify) func(*gin.Context) {
 			},
 			func(ret interface{}) (interface{}, error) {
 				token := ret.(*Token)
-				return token, iden.Model.Revoke(token)
+				return token, iden.model.Revoke(token)
 			},
 			func(ret interface{}) (interface{}, error) {
 				token := ret.(*Token)
 				token.CreatedAt = time.Now().Unix()
 				token.UpdatedAt = time.Now().Unix()
 				token.AccessToken = RandString(32)
-				return iden.Model.Save(token)
+				return iden.model.Save(token)
 			},
 		)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"message": "Internal Server Error",
-				"stack":   err.Error(),
+				"message": err.Error(),
 			})
 			return
 		}

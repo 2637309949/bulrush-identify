@@ -6,11 +6,8 @@ package identify
 
 import (
 	"encoding/json"
-	"errors"
-	"net/http"
 	"time"
 
-	utils "github.com/2637309949/bulrush-utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,19 +17,13 @@ const IdenKey = "identify"
 type (
 	// Identify authentication interface
 	Identify struct {
-		Auth       func(c *gin.Context) (interface{}, error)
-		Iden       func(c *gin.Context)
+		auth       func(c *gin.Context) (interface{}, error)
+		iden       func(c *gin.Context)
 		ExpiresIn  int64
 		Routes     RoutesGroup
-		Model      Model
-		FakeURLs   []string
-		FakeTokens []string
-	}
-	// Model token store
-	Model interface {
-		Save(*Token) (*Token, error)
-		Find(*Token) (*Token, error)
-		Revoke(*Token) error
+		model      Model
+		fakeURLs   []string
+		fakeTokens []string
 	}
 	// RoutesGroup iden routes
 	RoutesGroup struct {
@@ -86,36 +77,30 @@ func (t *Token) ISValid() bool {
 func New() *Identify {
 	iden := &Identify{
 		ExpiresIn: 86400,
-		Routes:    RoutesGroup{},
-		Auth: func(c *gin.Context) (interface{}, error) {
-			return nil, errors.New("user authentication failed")
-		},
+		Routes:    defaultRoutesGroup,
+		auth:      defaultAuth,
 	}
-	iden.Iden = func(c *gin.Context) {
-		c.JSON(http.StatusOK, iden.GetToken(c).Extra)
-	}
+	iden.iden = defaultIden(iden)
 	return iden
 }
 
-// Init Identify
-func (iden *Identify) routesGroup() *Identify {
-	iden.Routes.ObtainTokenRoute = utils.Some(iden.Routes.ObtainTokenRoute, "/obtainToken").(string)
-	iden.Routes.RevokeTokenRoute = utils.Some(iden.Routes.RevokeTokenRoute, "/revokeToken").(string)
-	iden.Routes.RefleshTokenRoute = utils.Some(iden.Routes.RefleshTokenRoute, "/refleshToken").(string)
-	iden.Routes.IdenTokenRoute = utils.Some(iden.Routes.IdenTokenRoute, "/idenToken").(string)
+// AddOptions defined add option
+func (iden *Identify) AddOptions(opts ...Option) *Identify {
+	for _, v := range opts {
+		v.apply(iden)
+	}
 	return iden
 }
 
 // Init Identify
 func (iden *Identify) Init(init func(*Identify)) *Identify {
 	init(iden)
-	iden.routesGroup()
 	return iden
 }
 
 // ObtainToken accessToken
 func (iden *Identify) ObtainToken(extra interface{}) (*Token, error) {
-	return iden.Model.Save(&Token{
+	return iden.model.Save(&Token{
 		AccessToken:  RandString(32),
 		RefreshToken: RandString(32),
 		ExpiresIn:    iden.ExpiresIn,
@@ -133,8 +118,8 @@ func (iden *Identify) GetToken(ctx *gin.Context) *Token {
 	return nil
 }
 
-// setToken set to ctx
-func (iden *Identify) setToken(ctx *gin.Context, token *Token) {
+// SetToken set to ctx
+func (iden *Identify) SetToken(ctx *gin.Context, token *Token) {
 	ctx.Set(IdenKey, token)
 }
 
@@ -145,5 +130,5 @@ func (iden *Identify) Plugin(router *gin.RouterGroup, httpProxy *gin.Engine) {
 	router.Use(verifyToken(iden))
 	router.POST(iden.Routes.RefleshTokenRoute, refleshToken(iden))
 	router.POST(iden.Routes.RevokeTokenRoute, revokeToken(iden))
-	router.POST(iden.Routes.IdenTokenRoute, iden.Iden)
+	router.POST(iden.Routes.IdenTokenRoute, iden.iden)
 }

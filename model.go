@@ -12,11 +12,18 @@ import (
 	goRedis "github.com/go-redis/redis"
 )
 
-// RedisModel adapter for redis
-type RedisModel struct {
-	Model
-	Redis *redisext.Redis
-}
+type (
+	// Model defined
+	Model interface {
+		Save(*Token) (*Token, error)
+		Find(*Token) (*Token, error)
+		Revoke(*Token) error
+	}
+	// RedisModel token store
+	RedisModel struct {
+		Redis *redisext.Redis
+	}
+)
 
 // Save save a token
 func (model *RedisModel) Save(token *Token) (*Token, error) {

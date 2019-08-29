@@ -22,7 +22,7 @@ func accessToken(iden *Identify) func(*gin.Context) {
 				return value
 			},
 		).(string)
-		iden.setToken(c, &Token{AccessToken: token})
+		iden.SetToken(c, &Token{AccessToken: token})
 		c.Next()
 	}
 }

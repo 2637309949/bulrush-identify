@@ -13,25 +13,22 @@ import (
 )
 
 func verifyToken(iden *Identify) func(*gin.Context) {
-	FakeURLs := iden.FakeURLs
-	FakeTokens := iden.FakeTokens
+	fakeURLs := iden.fakeURLs
+	fakeTokens := iden.fakeTokens
 	return func(c *gin.Context) {
 		reqPath := c.Request.URL.Path
-
 		token := iden.GetToken(c)
 		if token == nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"message": "Internal Server Error",
-				"stack":   "invalid token",
+				"message": "invalid token",
 			})
 			return
 		}
-
-		fakeURL := funk.Find(FakeURLs, func(regex string) bool {
+		fakeURL := funk.Find(fakeURLs, func(regex string) bool {
 			r, _ := regexp.Compile(regex)
 			return r.MatchString(reqPath)
 		})
-		fakeToken := funk.Find(FakeTokens, func(fake string) bool {
+		fakeToken := funk.Find(fakeTokens, func(fake string) bool {
 			return token.AccessToken == fake
 		})
 
@@ -40,14 +37,14 @@ func verifyToken(iden *Identify) func(*gin.Context) {
 		} else if fakeToken != nil {
 			c.Next()
 		} else {
-			token, err := iden.Model.Find(token)
+			token, err := iden.model.Find(token)
 			if err != nil {
 				c.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
 				c.Abort()
 				return
 			}
 			if token.ISValid() {
-				iden.setToken(c, token)
+				iden.SetToken(c, token)
 				c.Next()
 			} else {
 				c.JSON(http.StatusUnauthorized, gin.H{"message": "invalid token"})

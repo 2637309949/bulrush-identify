@@ -5,7 +5,11 @@
 package identify
 
 import (
+	"errors"
 	"math/rand"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 // RandString gen random string
@@ -24,4 +28,21 @@ func Some(target interface{}, initValue interface{}) interface{} {
 		return target
 	}
 	return initValue
+}
+
+func defaultIden(iden *Identify) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		c.JSON(http.StatusOK, iden.GetToken(c).Extra)
+	}
+}
+
+func defaultAuth(c *gin.Context) (interface{}, error) {
+	return nil, errors.New("user authentication failed")
+}
+
+var defaultRoutesGroup = RoutesGroup{
+	ObtainTokenRoute:  "/obtainToken",
+	RevokeTokenRoute:  "/revokeToken",
+	RefleshTokenRoute: "/refleshToken",
+	IdenTokenRoute:    "/idenToken",
 }

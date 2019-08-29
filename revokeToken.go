@@ -14,10 +14,9 @@ func revokeToken(iden *Identify) func(*gin.Context) {
 	return func(c *gin.Context) {
 		token := iden.GetToken(c)
 		if token != nil {
-			if err := iden.Model.Revoke(token); err != nil {
+			if err := iden.model.Revoke(token); err != nil {
 				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-					"message": "Internal Server Error",
-					"stack":   err.Error(),
+					"message": err.Error(),
 				})
 				return
 			}
