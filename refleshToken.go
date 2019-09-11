@@ -20,14 +20,14 @@ func refleshToken(iden *Identify) func(*gin.Context) {
 			},
 			func(ret interface{}) (interface{}, error) {
 				token := ret.(*Token)
-				return token, iden.model.Revoke(token)
+				return token, iden.Model.Revoke(token)
 			},
 			func(ret interface{}) (interface{}, error) {
 				token := ret.(*Token)
 				token.CreatedAt = time.Now().Unix()
 				token.UpdatedAt = time.Now().Unix()
 				token.AccessToken = RandString(32)
-				return iden.model.Save(token)
+				return iden.Model.Save(token)
 			},
 		)
 		if err != nil {

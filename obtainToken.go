@@ -15,7 +15,7 @@ func obtainToken(iden *Identify) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		data, err := funcs.Chain(
 			func(ret interface{}) (interface{}, error) {
-				return iden.auth(c)
+				return iden.Auth(c)
 			},
 			func(ret interface{}) (interface{}, error) {
 				return iden.ObtainToken(ret)

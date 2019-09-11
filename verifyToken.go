@@ -13,8 +13,8 @@ import (
 )
 
 func verifyToken(iden *Identify) func(*gin.Context) {
-	fakeURLs := iden.fakeURLs
-	fakeTokens := iden.fakeTokens
+	fakeURLs := iden.FakeURLs
+	fakeTokens := iden.FakeTokens
 	return func(c *gin.Context) {
 		reqPath := c.Request.URL.Path
 		token := iden.GetToken(c)
@@ -24,11 +24,11 @@ func verifyToken(iden *Identify) func(*gin.Context) {
 			})
 			return
 		}
-		fakeURL := funk.Find(fakeURLs, func(regex string) bool {
+		fakeURL := funk.Find(*fakeURLs, func(regex string) bool {
 			r, _ := regexp.Compile(regex)
 			return r.MatchString(reqPath)
 		})
-		fakeToken := funk.Find(fakeTokens, func(fake string) bool {
+		fakeToken := funk.Find(*fakeTokens, func(fake string) bool {
 			return token.AccessToken == fake
 		})
 
@@ -37,7 +37,7 @@ func verifyToken(iden *Identify) func(*gin.Context) {
 		} else if fakeToken != nil {
 			c.Next()
 		} else {
-			token, err := iden.model.Find(token)
+			token, err := iden.Model.Find(token)
 			if err != nil {
 				c.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
 				c.Abort()

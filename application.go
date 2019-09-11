@@ -17,13 +17,13 @@ const IdenKey = "identify"
 type (
 	// Identify authentication interface
 	Identify struct {
-		auth       func(c *gin.Context) (interface{}, error)
-		iden       func(c *gin.Context)
+		Auth       func(c *gin.Context) (interface{}, error)
+		Iden       func(c *gin.Context)
 		ExpiresIn  int64
 		Routes     RoutesGroup
-		model      Model
-		fakeURLs   []string
-		fakeTokens []string
+		Model      Model
+		FakeURLs   *[]string
+		FakeTokens *[]string
 	}
 	// RoutesGroup iden routes
 	RoutesGroup struct {
@@ -75,12 +75,16 @@ func (t *Token) ISValid() bool {
 
 // New defined return a new struct
 func New() *Identify {
+	fakeURLs := make([]string, 0)
+	fakeTokens := make([]string, 0)
 	iden := &Identify{
-		ExpiresIn: 86400,
-		Routes:    defaultRoutesGroup,
-		auth:      defaultAuth,
+		ExpiresIn:  86400,
+		Routes:     defaultRoutesGroup,
+		Auth:       defaultAuth,
+		FakeURLs:   &fakeURLs,
+		FakeTokens: &fakeTokens,
 	}
-	iden.iden = defaultIden(iden)
+	iden.Iden = defaultIden(iden)
 	return iden
 }
 
@@ -100,7 +104,7 @@ func (iden *Identify) Init(init func(*Identify)) *Identify {
 
 // ObtainToken accessToken
 func (iden *Identify) ObtainToken(extra interface{}) (*Token, error) {
-	return iden.model.Save(&Token{
+	return iden.Model.Save(&Token{
 		AccessToken:  RandString(32),
 		RefreshToken: RandString(32),
 		ExpiresIn:    iden.ExpiresIn,
@@ -108,6 +112,25 @@ func (iden *Identify) ObtainToken(extra interface{}) (*Token, error) {
 		UpdatedAt:    time.Now().Unix(),
 		Extra:        extra,
 	})
+}
+
+// VerifyContext defined verify
+func (iden *Identify) VerifyContext(ctx *gin.Context) bool {
+	token := iden.GetToken(ctx)
+	one, err := iden.Model.Find(token)
+	if err == nil {
+		return one.ISValid()
+	}
+	return false
+}
+
+// VerifyToken defined verify
+func (iden *Identify) VerifyToken(token string) bool {
+	one, err := iden.Model.Find(&Token{AccessToken: token})
+	if err == nil {
+		return one.ISValid()
+	}
+	return false
 }
 
 // GetToken get from ctx
@@ -124,11 +147,12 @@ func (iden *Identify) SetToken(ctx *gin.Context, token *Token) {
 }
 
 // Plugin for bulrush
-func (iden *Identify) Plugin(router *gin.RouterGroup, httpProxy *gin.Engine) {
+func (iden *Identify) Plugin(router *gin.RouterGroup, httpProxy *gin.Engine) *Identify {
 	router.Use(accessToken(iden))
 	router.POST(iden.Routes.ObtainTokenRoute, obtainToken(iden))
 	router.Use(verifyToken(iden))
 	router.POST(iden.Routes.RefleshTokenRoute, refleshToken(iden))
 	router.POST(iden.Routes.RevokeTokenRoute, revokeToken(iden))
-	router.POST(iden.Routes.IdenTokenRoute, iden.iden)
+	router.POST(iden.Routes.IdenTokenRoute, iden.Iden)
+	return iden
 }

@@ -20,7 +20,7 @@ func (o Option) check(r *Identify) interface{} { return o(r) }
 // AuthOption defined auth
 func AuthOption(auth func(ctx *gin.Context) (interface{}, error)) Option {
 	return Option(func(r *Identify) interface{} {
-		r.auth = auth
+		r.Auth = auth
 		return r
 	})
 }
@@ -28,7 +28,7 @@ func AuthOption(auth func(ctx *gin.Context) (interface{}, error)) Option {
 // ModelOption defined model
 func ModelOption(model Model) Option {
 	return Option(func(r *Identify) interface{} {
-		r.model = model
+		r.Model = model
 		return r
 	})
 }
@@ -36,7 +36,7 @@ func ModelOption(model Model) Option {
 // IdenOption defined iden
 func IdenOption(iden func(c *gin.Context)) Option {
 	return Option(func(r *Identify) interface{} {
-		r.iden = iden
+		r.Iden = iden
 		return r
 	})
 }
@@ -44,7 +44,7 @@ func IdenOption(iden func(c *gin.Context)) Option {
 // FakeTokensOption defined model
 func FakeTokensOption(f []string) Option {
 	return Option(func(r *Identify) interface{} {
-		r.fakeTokens = f
+		r.FakeTokens = &f
 		return r
 	})
 }
@@ -52,7 +52,7 @@ func FakeTokensOption(f []string) Option {
 // FakeURLsOption defined model
 func FakeURLsOption(f []string) Option {
 	return Option(func(r *Identify) interface{} {
-		r.fakeURLs = f
+		r.FakeURLs = &f
 		return r
 	})
 }
